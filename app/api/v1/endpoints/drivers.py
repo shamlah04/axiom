@@ -1,7 +1,9 @@
 """
-Driver endpoints: list and create.
+Driver endpoints: list, create, delete.
 """
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -33,3 +35,19 @@ async def create_driver(
         fleet_id=current_user.fleet_id,
         **payload.model_dump(),
     )
+
+
+@router.delete("/{driver_id}", status_code=204)
+async def delete_driver(
+    driver_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_fleet_user),
+):
+    """Soft-delete: sets is_active=False. Jobs referencing the driver are preserved."""
+    repo = DriverRepository(db)
+    driver = await repo.get(driver_id, current_user.fleet_id)
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+
+    await repo.update(driver, {"is_active": False})
+

@@ -50,3 +50,18 @@ async def update_truck(
         raise HTTPException(status_code=404, detail="Truck not found")
 
     return await repo.update(truck, payload.model_dump(exclude_unset=True))
+
+
+@router.delete("/{truck_id}", status_code=204)
+async def delete_truck(
+    truck_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_fleet_user),
+):
+    """Soft-delete: sets is_active=False. Jobs referencing the truck are preserved."""
+    repo = TruckRepository(db)
+    truck = await repo.get(truck_id, current_user.fleet_id)
+    if not truck:
+        raise HTTPException(status_code=404, detail="Truck not found")
+
+    await repo.update(truck, {"is_active": False})

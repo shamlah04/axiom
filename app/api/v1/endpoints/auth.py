@@ -1,5 +1,5 @@
 """
-Auth endpoints: register, login, me.
+Auth endpoints: register, login, me, refresh.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -50,3 +50,11 @@ async def login(
 @router.get("/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh(current_user: User = Depends(get_current_user)):
+    """Issue a fresh token while the current token is still valid."""
+    token = create_access_token(subject=current_user.id)
+    return Token(access_token=token)
+

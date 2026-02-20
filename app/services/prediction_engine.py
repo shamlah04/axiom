@@ -102,6 +102,16 @@ class ProfitPredictionEngine:
         truck: TruckCostConfig,
         driver: DriverCostConfig,
     ) -> PredictionOutput:
+        # Guard against nonsense inputs
+        if job.distance_km <= 0:
+            raise ValueError(f"distance_km must be positive, got {job.distance_km}")
+        if job.estimated_duration_hours <= 0:
+            raise ValueError(f"estimated_duration_hours must be positive, got {job.estimated_duration_hours}")
+        if job.offered_rate <= 0:
+            raise ValueError(f"offered_rate must be positive, got {job.offered_rate}")
+        if job.fuel_price_per_unit < 0:
+            raise ValueError(f"fuel_price_per_unit cannot be negative, got {job.fuel_price_per_unit}")
+
         breakdown = self._calculate_costs(job, truck, driver)
         total_cost = breakdown.total
         net_profit = job.offered_rate - total_cost

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Enum
+    Boolean, DateTime, Float, ForeignKey, Index, String, Text, Enum
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -110,6 +110,8 @@ class Truck(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    __table_args__ = (Index("ix_trucks_fleet_id", "fleet_id"),)
+
     fleet: Mapped["Fleet"] = relationship(back_populates="trucks")
     jobs: Mapped[list["Job"]] = relationship(back_populates="truck")
 
@@ -128,6 +130,8 @@ class Driver(Base):
     monthly_fixed_cost: Mapped[float] = mapped_column(Float, default=0.0)  # EUR
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (Index("ix_drivers_fleet_id", "fleet_id"),)
 
     fleet: Mapped["Fleet"] = relationship(back_populates="drivers")
     jobs: Mapped[list["Job"]] = relationship(back_populates="driver")
@@ -172,6 +176,8 @@ class Job(Base):
     status: Mapped[str] = mapped_column(String(30), default="pending")  # pending/accepted/rejected/completed
     job_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (Index("ix_jobs_fleet_id", "fleet_id"),)
 
     fleet: Mapped["Fleet"] = relationship(back_populates="jobs")
     truck: Mapped["Truck"] = relationship(back_populates="jobs")
