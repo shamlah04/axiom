@@ -239,3 +239,52 @@ class ScenarioResult(BaseModel):
     margin_pct: float
     risk_level: RiskLevel
     recommendation: JobRecommendation
+from pydantic import BaseModel
+
+
+# ---------------------------------------------------------------------------
+# Monthly Profit Trends
+# ---------------------------------------------------------------------------
+
+class MonthlyTrend(BaseModel):
+    year: int
+    month: int
+    job_count: int
+    accepted_count: int
+    rejected_count: int
+    total_revenue: float
+    total_cost: float
+    total_profit: float
+    avg_margin_pct: float
+
+
+# ---------------------------------------------------------------------------
+# Top Routes
+# ---------------------------------------------------------------------------
+
+class TopRoute(BaseModel):
+    origin: str
+    destination: str
+    job_count: int
+    avg_margin_pct: float
+    avg_net_profit: float
+    avg_rate: float
+    avg_cost: float
+    avg_distance_km: float
+
+
+# ---------------------------------------------------------------------------
+# Fuel Volatility
+# ---------------------------------------------------------------------------
+
+class FuelVolatilityMonth(BaseModel):
+    year: int
+    month: int
+    job_count: int
+    avg_fuel_price: float
+    min_fuel_price: float
+    max_fuel_price: float
+    fuel_price_range: float   # max - min: spread within the month
+    avg_margin_pct: float
+    avg_total_cost: float
+    avg_rate: float
