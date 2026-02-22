@@ -40,7 +40,7 @@ import numpy as np
 # Allow running from repo root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
@@ -235,13 +235,38 @@ async def main(min_samples: int, dry_run: bool):
         training_samples=result["n_samples"],
         train_rmse=result["train_rmse"],
         train_r2=result["train_r2"],
+        test_rmse=result["test_rmse"],
+        test_r2=result["test_r2"],
         created_at=datetime.now(timezone.utc).isoformat(),
     )
 
     reg = MLModelRegistry(models_dir)
     saved_path = reg.save(result["model"], result["scaler"], meta)
 
-    print("\n✅ Model trained and saved successfully")
+    # ── Bug 1 Fix: Write to DB ──────────────────────────────────────────
+    from app.models.ml_models import MLModelVersion
+    async with async_session() as session:
+        # Deactivate all previous versions
+        await session.execute(
+            update(MLModelVersion).where(MLModelVersion.is_active == True).values(is_active=False)
+        )
+
+        mv = MLModelVersion(
+            version=version,
+            training_samples=result["n_samples"],
+            train_rmse=result["train_rmse"],
+            train_r2=result["train_r2"],
+            test_rmse=result["test_rmse"],
+            test_r2=result["test_r2"],
+            feature_names=FEATURE_NAMES,
+            model_path=str(saved_path),
+            is_active=True,
+        )
+        session.add(mv)
+        await session.commit()
+    # ──────────────────────────────────────────────────────────────────
+
+    print("\n✅ Model trained and saved successfully (Disk + DB)")
     print(f"   Version:   {version}")
     print(f"   Path:      {saved_path}")
     print(f"   Samples:   {result['n_samples']}")
