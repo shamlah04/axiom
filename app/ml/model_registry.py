@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Optional
 
 import joblib
-import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
@@ -46,6 +45,8 @@ class ModelMetadata:
     train_rmse: float
     train_r2: float
     created_at: str
+    test_rmse: Optional[float] = None
+    test_r2: Optional[float] = None
     description: str = "GradientBoostingRegressor — net_profit prediction"
 
     def to_dict(self) -> dict:

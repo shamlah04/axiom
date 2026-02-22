@@ -66,7 +66,7 @@ class PredictionLogRepository:
                 func.count(PredictionLog.id).label("n"),
                 func.avg(PredictionLog.abs_profit_error).label("mae"),
                 func.avg(
-                    func.pow(PredictionLog.profit_error, 2)
+                    PredictionLog.profit_error * PredictionLog.profit_error
                 ).label("mse"),
                 func.avg(PredictionLog.profit_error_pct).label("avg_error_pct"),
                 func.avg(PredictionLog.predicted_margin_pct).label("avg_predicted_margin"),
@@ -104,6 +104,7 @@ class MLModelVersionRepository:
         return result.scalar_one_or_none()
 
     async def set_active(self, version: str) -> Optional[MLModelVersion]:
+        # NOTE: For Phase 1 we scan all versions; consider pagination/filtered update if N > 1000.
         # Deactivate all
         all_result = await self.db.execute(select(MLModelVersion))
         for mv in all_result.scalars().all():

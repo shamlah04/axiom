@@ -79,7 +79,7 @@ async def enforce_truck_limit(
     from app.repositories.repositories import FleetRepository
 
     fleet_repo = FleetRepository(db)
-    fleet = await fleet_repo.get_by_id(current_user.fleet_id)
+    fleet = await fleet_repo.get(current_user.fleet_id)
     if not fleet:
         raise HTTPException(status_code=404, detail="Fleet not found")
 
@@ -113,7 +113,7 @@ async def enforce_driver_limit(
     from app.repositories.repositories import FleetRepository
 
     fleet_repo = FleetRepository(db)
-    fleet = await fleet_repo.get_by_id(current_user.fleet_id)
+    fleet = await fleet_repo.get(current_user.fleet_id)
     if not fleet:
         raise HTTPException(status_code=404, detail="Fleet not found")
 

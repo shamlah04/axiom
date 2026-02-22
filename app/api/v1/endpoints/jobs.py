@@ -92,11 +92,9 @@ async def create_job(
     version_repo = MLModelVersionRepository(db)
     active_version = await version_repo.get_active()
 
-    features_dict = {
-        "distance_km": payload.distance_km,
-        "offered_rate": payload.offered_rate,
-        "estimated_duration_hours": payload.estimated_duration_hours,
-    }
+    from app.ml.features import build_feature_vector, FEATURE_NAMES
+    X = build_feature_vector(feature_input)
+    features_dict = {name: float(val) for name, val in zip(FEATURE_NAMES, X.flatten())}
 
     pred_log = PredictionLog(
         job_id=job.id,
