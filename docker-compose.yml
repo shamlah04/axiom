@@ -12,11 +12,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8000
+    depends_on:
+      - api
+      
   api:
     build: .
     ports:
       - "8000:8000"
-    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://fcip:fcip_pass@db:5432/fcip_db
     depends_on:
       - db
     volumes:
