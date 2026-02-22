@@ -43,7 +43,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements_ml.txt
 
       - name: Run Alembic migrations
         run: alembic upgrade head
@@ -65,7 +65,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements_ml.txt
 
       - name: Check syntax (py_compile)
         run: |
