@@ -10,7 +10,8 @@ env/
 .env
 
 # Alembic
-alembic/versions/*.py
+# We want to track migrations, so do NOT ignore alembic/versions/*.py
+!alembic/versions/.gitkeep
 
 # DB
 *.db
@@ -22,3 +23,12 @@ alembic/versions/*.py
 
 # Mac
 .DS_Store
+
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/next-env.d.ts
+web/package-lock.json
+web/.env*.local
