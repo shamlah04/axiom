@@ -6,9 +6,9 @@ from app.api.v1.router import api_router
 from app.core.startup import lifespan
 
 app = FastAPI(
-    title="Fleet Cognitive Intelligence Platform",
+    title="Axiom — Fleet Intelligence API",
     description="AI-driven decision intelligence for small and micro fleet operators.",
-    version="0.1.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
