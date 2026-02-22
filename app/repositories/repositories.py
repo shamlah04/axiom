@@ -149,6 +149,24 @@ class JobRepository(BaseRepository):
             setattr(job, key, value)
         return await self._commit_refresh(job)
 
+    async def update_status(self, job_id: uuid.UUID, fleet_id: uuid.UUID, status: str) -> Optional[Job]:
+        job = await self.get(job_id, fleet_id)
+        if not job:
+            return None
+        job.status = status
+        return await self._commit_refresh(job)
+
+    async def update_actual(
+        self, job_id: uuid.UUID, fleet_id: uuid.UUID, actual_revenue: float, actual_cost: float
+    ) -> Optional[Job]:
+        job = await self.get(job_id, fleet_id)
+        if not job:
+            return None
+        job.actual_revenue = actual_revenue
+        job.actual_cost = actual_cost
+        job.status = "completed"
+        return await self._commit_refresh(job)
+
     async def kpi_summary(self, fleet_id: uuid.UUID) -> dict:
         """Aggregate KPI metrics for the dashboard."""
         result = await self.db.execute(
