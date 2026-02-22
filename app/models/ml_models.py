@@ -3,8 +3,8 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, Boolean
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -28,7 +28,7 @@ class MLModelVersion(Base):
     train_r2: Mapped[float] = mapped_column(Float, nullable=False)
     test_rmse: Mapped[float] = mapped_column(Float, nullable=True)
     test_r2: Mapped[float] = mapped_column(Float, nullable=True)
-    feature_names: Mapped[dict] = mapped_column(JSONB, nullable=False)   # list of feature names
+    feature_names: Mapped[dict] = mapped_column(JSON, nullable=False)   # list of feature names
     model_path: Mapped[str] = mapped_column(String(512), nullable=False)  # filesystem path
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -71,10 +71,10 @@ class PredictionLog(Base):
     predicted_margin_pct: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Feature snapshot (JSON) — allows replay and debugging
-    features_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    features_snapshot: Mapped[dict] = mapped_column(JSON, nullable=True)
 
     # Feature importances at prediction time
-    feature_importances: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    feature_importances: Mapped[dict] = mapped_column(JSON, nullable=True)
 
     # Actuals (filled in when job completes)
     actual_net_profit: Mapped[float] = mapped_column(Float, nullable=True)
