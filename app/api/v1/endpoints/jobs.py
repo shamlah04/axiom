@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_fleet_user
+from app.core.roles import require_dispatcher_or_above
 from app.ml.features import JobFeatureInput
 from app.ml.prediction_engine import ml_engine
 from app.ml.model_registry import registry
@@ -23,7 +24,12 @@ from app.schemas.schemas import (
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
-@router.post("", response_model=JobPredictionResult, status_code=201)
+@router.post(
+    "",
+    response_model=JobPredictionResult,
+    status_code=201,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def create_job(
     payload: JobCreate,
     db: AsyncSession = Depends(get_db),
@@ -153,7 +159,11 @@ async def get_job(
     return job
 
 
-@router.patch("/{job_id}/status", response_model=JobOut)
+@router.patch(
+    "/{job_id}/status",
+    response_model=JobOut,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def update_job_status(
     job_id: uuid.UUID,
     payload: JobStatusUpdate,
@@ -171,7 +181,11 @@ async def update_job_status(
     return job
 
 
-@router.patch("/{job_id}/actual", response_model=JobOut)
+@router.patch(
+    "/{job_id}/actual",
+    response_model=JobOut,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def update_job_actual(
     job_id: uuid.UUID,
     payload: JobActualUpdate,
