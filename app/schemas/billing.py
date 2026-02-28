@@ -24,6 +24,10 @@ class CheckoutResponse(BaseModel):
     session_id: str
 
 
+class PortalResponse(BaseModel):
+    portal_url: str
+
+
 # ── Audit Log ─────────────────────────────────────────────────────────────
 
 class AuditLogOut(BaseModel):

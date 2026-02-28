@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     STRIPE_PRICE_TIER2: str | None = None
     STRIPE_PRICE_TIER3: str | None = None
 
+    # Scheduler (Phase 5)
+    SCHEDULER_ENABLED: bool = True
+    TRIAL_WARNING_DAYS: int = 3
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_min_length(cls, v: str) -> str:

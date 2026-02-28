@@ -1,5 +1,13 @@
+import os
 import asyncio
 import importlib
+
+# ── Environment Overrides ───────────────────────────────────────────
+os.environ["SCHEDULER_ENABLED"] = "False"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared"
+os.environ["TESTING"] = "True"
+# ────────────────────────────────────────────────────────────────────
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -17,22 +25,38 @@ importlib.import_module("app.models.ml_models")
 importlib.import_module("app.models.team")
 importlib.import_module("app.models.audit")
 
-# Use SQLite in-memory for tests
-SQLITE_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+SQLITE_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared"
 
-engine = create_async_engine(
-    SQLITE_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the session."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    yield loop
+    # loop.close() - Removing this to avoid closed loop errors during teardown
+
+@pytest.fixture(scope="session")
+async def engine():
+    _engine = create_async_engine(
+        SQLITE_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    yield _engine
+    await _engine.dispose()
+
+@pytest.fixture(scope="session")
+def TestingSessionLocal(engine):
+    return async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
 @pytest.fixture(scope="session", autouse=True)
-async def init_db():
+async def init_db(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -40,9 +64,16 @@ async def init_db():
         await conn.run_sync(Base.metadata.drop_all)
 
 @pytest.fixture
-async def db_session():
+async def db_session(TestingSessionLocal):
     async with TestingSessionLocal() as session:
         yield session
+
+@pytest.fixture(autouse=True)
+def override_database_internals(monkeypatch, engine, TestingSessionLocal):
+    """Force all background tasks and dependencies to use our test engine and sessionmaker."""
+    import app.core.database
+    monkeypatch.setattr("app.core.database.engine", engine)
+    monkeypatch.setattr("app.core.database.AsyncSessionLocal", TestingSessionLocal)
 
 @pytest.fixture(autouse=True)
 async def override_get_db(db_session):

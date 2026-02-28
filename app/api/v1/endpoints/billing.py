@@ -35,6 +35,7 @@ from app.repositories.audit_repository import AuditRepository
 from app.schemas.billing import (
     CheckoutRequest,
     CheckoutResponse,
+    PortalResponse,
     AuditLogOut,
     AuditLogPage,
 )
@@ -116,6 +117,49 @@ async def create_checkout(
         checkout_url=result["checkout_url"],
         session_id=result["session_id"],
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Billing Portal
+# ─────────────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/billing/portal",
+    response_model=PortalResponse,
+    dependencies=[Depends(require_owner)],
+)
+async def get_billing_portal(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_fleet_user),
+):
+    """
+    Creates a Stripe Customer Portal session for managing subscriptions and invoices.
+    """
+    fleet_repo = FleetRepository(db)
+    fleet = await fleet_repo.get(current_user.fleet_id)
+    if not fleet:
+        raise HTTPException(status_code=404, detail="Fleet not found")
+
+    customer_id = fleet.stripe_customer_id
+
+    if not customer_id:
+        # Resolve customer ID on the fly if missing
+        customer_id = await _stripe.get_or_create_customer(
+            email=current_user.email,
+            fleet_id=str(fleet.id),
+            fleet_name=fleet.name
+        )
+        if customer_id:
+            fleet.stripe_customer_id = customer_id
+            await db.commit()
+        else:
+            raise HTTPException(status_code=502, detail="Failed to resolve Stripe customer")
+
+    result = await _stripe.create_portal_session(customer_id)
+    if not result["ok"]:
+        raise HTTPException(status_code=502, detail=f"Stripe Portal error: {result.get('error')}")
+
+    return PortalResponse(portal_url=result["portal_url"])
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -219,6 +263,12 @@ async def _handle_checkout_success(session: dict, db: AsyncSession) -> None:
     old_tier = fleet.subscription_tier.value
     fleet.subscription_tier = new_tier
     fleet.trial_ends_at = None
+    
+    # Store customer ID for later portal access
+    customer_id = session.get("customer")
+    if customer_id:
+        fleet.stripe_customer_id = customer_id
+
     await db.commit()
     await db.refresh(fleet)
 

@@ -92,3 +92,19 @@ class AuditRepository:
             q = q.where(AuditLog.event_type == event_type)
         result = await self.db.execute(q)
         return result.scalar() or 0
+
+    async def has_event_since(
+        self,
+        fleet_id: uuid.UUID,
+        event_type: str,
+        since: datetime,
+    ) -> bool:
+        """Check if a specific event type exists for a fleet since a given time."""
+        from sqlalchemy import func
+        q = select(func.count(AuditLog.id)).where(
+            AuditLog.fleet_id == fleet_id,
+            AuditLog.event_type == event_type,
+            AuditLog.created_at >= since
+        )
+        result = await self.db.execute(q)
+        return (result.scalar() or 0) > 0

@@ -8,9 +8,8 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey, Index, String, Text, Enum
+    Boolean, DateTime, Float, ForeignKey, Index, String, Text, Enum, UUID
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -81,6 +80,7 @@ class Fleet(Base):
         Enum(SubscriptionTier), default=SubscriptionTier.tier1
     )
     trial_ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    stripe_customer_id: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     users: Mapped[list["User"]] = relationship(back_populates="fleet")
