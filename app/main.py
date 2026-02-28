@@ -8,7 +8,7 @@ from app.core.startup import lifespan
 app = FastAPI(
     title="Axiom — Fleet Intelligence API",
     description="AI-driven decision intelligence for small and micro fleet operators.",
-    version="2.0.0",
+    version="3.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -27,4 +27,4 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "3.0.0"}

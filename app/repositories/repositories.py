@@ -40,12 +40,13 @@ class UserRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def create(self, email: str, hashed_password: str, full_name: str) -> User:
-        user = User(email=email, hashed_password=hashed_password, full_name=full_name)
+        user = User(email=email, hashed_password=hashed_password, full_name=full_name, role="viewer")
         self.db.add(user)
         return await self._commit_refresh(user)
 
-    async def set_fleet(self, user: User, fleet_id: uuid.UUID) -> User:
+    async def set_fleet(self, user: User, fleet_id: uuid.UUID, role: str = "owner") -> User:
         user.fleet_id = fleet_id
+        user.role = role
         return await self._commit_refresh(user)
 
 
@@ -54,8 +55,8 @@ class UserRepository(BaseRepository):
 # ---------------------------------------------------------------------------
 
 class FleetRepository(BaseRepository):
-    async def create(self, name: str, country: str, subscription_tier) -> Fleet:
-        fleet = Fleet(name=name, country=country, subscription_tier=subscription_tier)
+    async def create(self, name: str, country: str, subscription_tier, trial_ends_at=None) -> Fleet:
+        fleet = Fleet(name=name, country=country, subscription_tier=subscription_tier, trial_ends_at=trial_ends_at)
         self.db.add(fleet)
         return await self._commit_refresh(fleet)
 

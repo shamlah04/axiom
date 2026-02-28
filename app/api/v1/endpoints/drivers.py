@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_fleet_user
+from app.core.roles import require_dispatcher_or_above
 from app.core.tier_limits import enforce_driver_limit
 from app.models.models import User
 from app.repositories.repositories import DriverRepository
@@ -28,7 +29,10 @@ async def list_drivers(
     "",
     response_model=DriverOut,
     status_code=201,
-    dependencies=[Depends(enforce_driver_limit)],   # ← tier check runs first
+    dependencies=[
+        Depends(enforce_driver_limit),
+        Depends(require_dispatcher_or_above),
+    ],
 )
 async def create_driver(
     payload: DriverCreate,
@@ -52,7 +56,11 @@ async def get_driver(
     return driver
 
 
-@router.delete("/{driver_id}", status_code=204)
+@router.delete(
+    "/{driver_id}",
+    status_code=204,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def delete_driver(
     driver_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

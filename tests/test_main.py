@@ -5,7 +5,7 @@ from httpx import AsyncClient
 async def test_health_check(client: AsyncClient):
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "version": "0.1.0"}
+    assert response.json() == {"status": "ok", "version": "3.0.0"}
 
 @pytest.mark.asyncio
 async def test_root_not_found(client: AsyncClient):

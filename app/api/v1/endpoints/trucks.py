@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_fleet_user
+from app.core.roles import require_dispatcher_or_above
 from app.core.tier_limits import enforce_truck_limit
 from app.models.models import User
 from app.repositories.repositories import TruckRepository
@@ -28,7 +29,10 @@ async def list_trucks(
     "",
     response_model=TruckOut,
     status_code=201,
-    dependencies=[Depends(enforce_truck_limit)],   # ← tier check runs first
+    dependencies=[
+        Depends(enforce_truck_limit),
+        Depends(require_dispatcher_or_above),
+    ],
 )
 async def create_truck(
     payload: TruckCreate,
@@ -52,7 +56,11 @@ async def get_truck(
     return truck
 
 
-@router.patch("/{truck_id}", response_model=TruckOut)
+@router.patch(
+    "/{truck_id}",
+    response_model=TruckOut,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def update_truck(
     truck_id: uuid.UUID,
     payload: TruckUpdate,
@@ -66,7 +74,11 @@ async def update_truck(
     return await repo.update(truck, payload.model_dump(exclude_unset=True))
 
 
-@router.delete("/{truck_id}", status_code=204)
+@router.delete(
+    "/{truck_id}",
+    status_code=204,
+    dependencies=[Depends(require_dispatcher_or_above)],
+)
 async def delete_truck(
     truck_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
