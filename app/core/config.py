@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
+    # Email (Phase 4)
+    RESEND_API_KEY: str | None = None
+    EMAIL_FROM: str = "Axiom <noreply@axiom.fleet>"
+    APP_BASE_URL: str = "http://localhost:3000"
+
+    # Stripe (Phase 4)
+    STRIPE_SECRET_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
+    STRIPE_PRICE_TIER2: str | None = None
+    STRIPE_PRICE_TIER3: str | None = None
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_min_length(cls, v: str) -> str:
