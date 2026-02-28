@@ -15,6 +15,7 @@ from app.core.config import settings
 importlib.import_module("app.models.models")
 importlib.import_module("app.models.ml_models")
 importlib.import_module("app.models.team")
+importlib.import_module("app.models.audit")
 
 # Use SQLite in-memory for tests
 SQLITE_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
