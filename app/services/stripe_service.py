@@ -47,12 +47,12 @@ STRIPE_API_BASE = "https://api.stripe.com/v1"
 class StripeService:
 
     def __init__(self):
-        self.secret_key = getattr(settings, "STRIPE_SECRET_KEY", None)
-        self.webhook_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", None)
-        self.price_tier2 = getattr(settings, "STRIPE_PRICE_TIER2", None)
-        self.price_tier3 = getattr(settings, "STRIPE_PRICE_TIER3", None)
+        self.secret_key = settings.STRIPE_SECRET_KEY
+        self.webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+        self.price_tier2 = settings.STRIPE_PRICE_TIER2
+        self.price_tier3 = settings.STRIPE_PRICE_TIER3
         self.enabled = bool(self.secret_key and not self.secret_key.startswith("disabled"))
-        self.app_url = getattr(settings, "APP_BASE_URL", "https://app.axiom.fleet")
+        self.app_url = settings.APP_BASE_URL
 
     def _headers(self) -> dict:
         return {

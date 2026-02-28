@@ -37,9 +37,9 @@ RESEND_API_URL = "https://api.resend.com/emails"
 class EmailService:
 
     def __init__(self):
-        self.api_key = getattr(settings, "RESEND_API_KEY", None)
-        self.from_addr = getattr(settings, "EMAIL_FROM", "Axiom <noreply@axiom.fleet>")
-        self.base_url = getattr(settings, "APP_BASE_URL", "https://app.axiom.fleet")
+        self.api_key = settings.RESEND_API_KEY
+        self.from_addr = settings.EMAIL_FROM
+        self.base_url = settings.APP_BASE_URL
         self.enabled = bool(self.api_key and self.api_key != "disabled")
 
     async def _send(self, to: str, subject: str, html: str) -> dict:
