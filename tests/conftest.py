@@ -27,17 +27,7 @@ importlib.import_module("app.models.audit")
 
 SQLITE_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared"
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the session."""
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-    yield loop
-    # loop.close() - Removing this to avoid closed loop errors during teardown
-
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def engine():
     _engine = create_async_engine(
         SQLITE_DATABASE_URL,
@@ -47,7 +37,7 @@ async def engine():
     yield _engine
     await _engine.dispose()
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def TestingSessionLocal(engine):
     return async_sessionmaker(
         bind=engine,
@@ -55,7 +45,7 @@ def TestingSessionLocal(engine):
         expire_on_commit=False,
     )
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 async def init_db(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
