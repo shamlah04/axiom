@@ -49,6 +49,14 @@ class UserRepository(BaseRepository):
         user.role = role
         return await self._commit_refresh(user)
 
+    async def get_fleet_owner(self, fleet_id: uuid.UUID) -> Optional[User]:
+        result = await self.db.execute(
+            select(User)
+            .where(User.fleet_id == fleet_id, User.role == "owner")
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
 
 # ---------------------------------------------------------------------------
 # Fleet
@@ -63,6 +71,31 @@ class FleetRepository(BaseRepository):
     async def get(self, fleet_id: uuid.UUID) -> Optional[Fleet]:
         result = await self.db.execute(select(Fleet).where(Fleet.id == fleet_id))
         return result.scalar_one_or_none()
+
+    async def get_trial_expiring_in(self, days: int) -> list[Fleet]:
+        """Find tier1 fleets whose trial ends within 'days' from now."""
+        from datetime import timedelta
+        now = datetime.now()
+        threshold = now + timedelta(days=days)
+        result = await self.db.execute(
+            select(Fleet).where(
+                Fleet.subscription_tier == "tier1",
+                Fleet.trial_ends_at > now,
+                Fleet.trial_ends_at <= threshold
+            )
+        )
+        return list(result.scalars().all())
+
+    async def get_expired_trials(self) -> list[Fleet]:
+        """Find tier1 fleets where trial has already ended."""
+        now = datetime.now()
+        result = await self.db.execute(
+            select(Fleet).where(
+                Fleet.subscription_tier == "tier1",
+                Fleet.trial_ends_at < now
+            )
+        )
+        return list(result.scalars().all())
 
 
 # ---------------------------------------------------------------------------

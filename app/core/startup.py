@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────
+    # 1. ML Loading
     loaded = registry.load_latest()
     if loaded:
         meta = registry.get_metadata()
@@ -20,11 +21,20 @@ async def lifespan(app: FastAPI):
         )
     else:
         log.warning(
-            "⚠️  No trained ML model found — using deterministic fallback engine. "
-            "Run: python scripts/train_model.py"
+            "⚠️  No trained ML model found — using deterministic fallback engine."
         )
+
+    # 2. Scheduler
+    from app.services.scheduler import setup_scheduler, scheduler
+    setup_scheduler()
+    if settings.SCHEDULER_ENABLED and not scheduler.running:
+        scheduler.start()
+        log.info("🚀 APScheduler started.")
 
     yield  # Application runs here
 
     # ── Shutdown ─────────────────────────────────────────────────────────
+    if scheduler.running:
+        scheduler.shutdown()
+        log.info("🛑 APScheduler shut down.")
     log.info("Axiom shutting down.")

@@ -13,8 +13,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, JSON
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, Index, String, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -30,6 +29,7 @@ class AuditEventType(str, enum.Enum):
     STRIPE_PAYMENT_SUCCESS        = "stripe.payment_success"
     STRIPE_PAYMENT_FAILED         = "stripe.payment_failed"
     STRIPE_SUBSCRIPTION_CANCELLED = "stripe.subscription_cancelled"
+    TRIAL_WARNING_SENT            = "trial.warning_sent"
 
     # Team
     MEMBER_INVITED                = "team.member_invited"
@@ -83,3 +83,6 @@ class AuditLog(Base):
         Index("ix_audit_logs_event_type", "event_type"),
         Index("ix_audit_logs_created_at", "created_at"),
     )
+
+
+

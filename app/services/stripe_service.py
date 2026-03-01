@@ -197,3 +197,71 @@ class StripeService:
             return None
         except Exception:
             return None
+
+    async def get_or_create_customer(self, email: str, fleet_id: str, fleet_name: str) -> Optional[str]:
+        """
+        Finds a Stripe customer by email or creates a new one.
+        Returns the Stripe Customer ID.
+        """
+        if not self.enabled:
+            return f"cus_mock_{fleet_id}"
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # 1. Search for existing customer
+                search_resp = await client.get(
+                    f"{STRIPE_API_BASE}/customers?email={email}",
+                    headers=self._headers()
+                )
+                if search_resp.status_code == 200:
+                    data = search_resp.json()
+                    customers = data.get("data", [])
+                    if customers:
+                        return customers[0]["id"]
+
+                # 2. Create if not found
+                create_resp = await client.post(
+                    f"{STRIPE_API_BASE}/customers",
+                    headers=self._headers(),
+                    data={
+                        "email": email,
+                        "name": fleet_name,
+                        "metadata[fleet_id]": fleet_id
+                    }
+                )
+                if create_resp.status_code in (200, 201):
+                    return create_resp.json().get("id")
+                else:
+                    log.error(f"[Stripe] Customer creation failed: {create_resp.text}")
+                    return None
+        except Exception as e:
+            log.error(f"[Stripe] Exception in get_or_create_customer: {e}")
+            return None
+
+    async def create_portal_session(self, customer_id: str) -> dict:
+        """
+        Creates a Stripe Customer Portal session.
+        Returns {"portal_url": "...", "ok": True} or {"ok": False, "error": "..."}
+        """
+        if not self.enabled:
+            fake_url = f"{self.app_url}/billing/mock-portal?customer_id={customer_id}"
+            return {"ok": True, "portal_url": fake_url}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{STRIPE_API_BASE}/billing_portal/sessions",
+                    headers=self._headers(),
+                    data={
+                        "customer": customer_id,
+                        "return_url": f"{self.app_url}/settings/billing"
+                    }
+                )
+                if resp.status_code in (200, 201):
+                    return {"ok": True, "portal_url": resp.json().get("url")}
+                else:
+                    log.error(f"[Stripe] Portal session failed: {resp.text}")
+                    return {"ok": False, "error": resp.text}
+        except Exception as e:
+            log.error(f"[Stripe] Exception creating portal session: {e}")
+            return {"ok": False, "error": str(e)}

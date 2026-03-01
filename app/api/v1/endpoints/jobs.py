@@ -4,10 +4,12 @@ Phase 1: ML-backed prediction and audit logging.
 """
 import uuid
 
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.config import settings
+from app.core.database import get_db, AsyncSessionLocal
 from app.core.deps import get_current_fleet_user
 from app.core.roles import require_dispatcher_or_above
 from app.ml.features import JobFeatureInput
@@ -15,13 +17,37 @@ from app.ml.prediction_engine import ml_engine
 from app.ml.model_registry import registry
 from app.models.models import User, Job
 from app.models.ml_models import PredictionLog
+from app.models.audit import AuditEventType
 from app.repositories.repositories import JobRepository, TruckRepository, DriverRepository
 from app.repositories.ml_repository import PredictionLogRepository, MLModelVersionRepository
+from app.repositories.audit_repository import AuditRepository
 from app.schemas.schemas import (
     JobCreate, JobOut, JobPredictionResult, JobStatusUpdate, JobActualUpdate
 )
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
+
+
+async def _run_audit(coro):
+    """If in test mode, wait for the audit task to finish to avoid race conditions."""
+    if settings.TESTING:
+        await coro
+    else:
+        asyncio.create_task(coro)
+
+
+async def _log_audit(event_type: str, actor_id=None, fleet_id=None, subject_id=None, metadata=None, ip=None):
+    """Background task for auditing."""
+    async with AsyncSessionLocal() as db:
+        audit = AuditRepository(db)
+        await audit.log(
+            event_type,
+            actor_user_id=actor_id,
+            fleet_id=fleet_id,
+            subject_id=subject_id,
+            metadata=metadata,
+            ip_address=ip
+        )
 
 
 @router.post(
@@ -178,6 +204,25 @@ async def update_job_status(
     job = await job_repo.update_status(job_id, current_user.fleet_id, payload.status)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    # Audit for terminal states
+    if payload.status in ("accepted", "rejected"):
+        event = AuditEventType.JOB_ACCEPTED if payload.status == "accepted" else AuditEventType.JOB_REJECTED
+        await _run_audit(
+            _log_audit(
+                event,
+                actor_id=current_user.id,
+                fleet_id=current_user.fleet_id,
+                subject_id=str(job_id),
+                metadata={
+                    "status": payload.status,
+                    "net_profit": job.net_profit,
+                    "margin_pct": job.margin_pct,
+                    "recommendation": job.recommendation,
+                }
+            )
+        )
+
     return job
 
 
@@ -207,11 +252,29 @@ async def update_job_actual(
 
     # --- Update prediction log with actual error ---
     actual_net_profit = payload.actual_revenue - payload.actual_cost
+    predicted_net_profit_at_creation = job.net_profit # Captured before update_actual
+
     await log_repo.update_actuals(
         job_id=job_id,
         actual_net_profit=actual_net_profit,
         actual_total_cost=payload.actual_cost,
         offered_rate=job.offered_rate,
+    )
+
+    # Audit log
+    await _run_audit(
+        _log_audit(
+            AuditEventType.JOB_ACTUALS_RECORDED,
+            actor_id=current_user.id,
+            fleet_id=current_user.fleet_id,
+            subject_id=str(job_id),
+            metadata={
+                "actual_revenue": payload.actual_revenue,
+                "actual_cost": payload.actual_cost,
+                "actual_net_profit": actual_net_profit,
+                "predicted_net_profit": predicted_net_profit_at_creation,
+            }
+        )
     )
 
     return job

@@ -1,5 +1,14 @@
+import os
 import asyncio
 import importlib
+import uuid
+
+# ── Environment Overrides ───────────────────────────────────────────
+os.environ["SCHEDULER_ENABLED"] = "False"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared"
+os.environ["TESTING"] = "True"
+# ────────────────────────────────────────────────────────────────────
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -7,7 +16,6 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.database import Base, get_db
-from app.core.config import settings
 
 # Force all models to register with Base.metadata before create_all runs.
 # Using importlib to avoid the `import app.models.X` syntax which would
@@ -17,22 +25,29 @@ importlib.import_module("app.models.ml_models")
 importlib.import_module("app.models.team")
 importlib.import_module("app.models.audit")
 
-# Use SQLite in-memory for tests
-SQLITE_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+@pytest.fixture
+async def engine():
+    # Use a unique in-memory database name per test to avoid cross-test interference
+    unique_db_name = f"memdb_{uuid.uuid4().hex}"
+    url = f"sqlite+aiosqlite:///file:{unique_db_name}?mode=memory&cache=shared"
+    _engine = create_async_engine(
+        url,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    yield _engine
+    await _engine.dispose()
 
-engine = create_async_engine(
-    SQLITE_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+@pytest.fixture
+def TestingSessionLocal(engine):
+    return async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
-@pytest.fixture(scope="session", autouse=True)
-async def init_db():
+@pytest.fixture(autouse=True)
+async def init_db(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -40,9 +55,27 @@ async def init_db():
         await conn.run_sync(Base.metadata.drop_all)
 
 @pytest.fixture
-async def db_session():
+async def db_session(TestingSessionLocal):
     async with TestingSessionLocal() as session:
         yield session
+
+@pytest.fixture(autouse=True)
+def override_database_internals(monkeypatch, engine, TestingSessionLocal):
+    """Force all modules that imported AsyncSessionLocal to use our localized test sessionmaker."""
+    import app.core.database
+    import app.api.v1.endpoints.auth
+    import app.api.v1.endpoints.jobs
+    import app.services.scheduler
+
+    # Override the engine and the session factory globally
+    monkeypatch.setattr("app.core.database.engine", engine)
+    monkeypatch.setattr("app.core.database.AsyncSessionLocal", TestingSessionLocal)
+    
+    # Also override in modules that might have already imported it
+    # These assignments ensure existing references now point to our test factory
+    monkeypatch.setattr("app.api.v1.endpoints.auth.AsyncSessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.api.v1.endpoints.jobs.AsyncSessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.services.scheduler.AsyncSessionLocal", TestingSessionLocal)
 
 @pytest.fixture(autouse=True)
 async def override_get_db(db_session):

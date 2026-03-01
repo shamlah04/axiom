@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Fleet Cognitive Intelligence Platform"
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
+    TESTING: bool = False
 
     # Database
     DATABASE_URL: str  # e.g. postgresql+asyncpg://user:pass@localhost/db
@@ -32,6 +33,10 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str | None = None
     STRIPE_PRICE_TIER2: str | None = None
     STRIPE_PRICE_TIER3: str | None = None
+
+    # Scheduler (Phase 5)
+    SCHEDULER_ENABLED: bool = True
+    TRIAL_WARNING_DAYS: int = 3
 
     @field_validator("SECRET_KEY")
     @classmethod
