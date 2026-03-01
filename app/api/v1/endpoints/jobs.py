@@ -8,6 +8,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db, AsyncSessionLocal
 from app.core.deps import get_current_fleet_user
 from app.core.roles import require_dispatcher_or_above
@@ -25,6 +26,14 @@ from app.schemas.schemas import (
 )
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
+
+
+async def _run_audit(coro):
+    """If in test mode, wait for the audit task to finish to avoid race conditions."""
+    if settings.TESTING:
+        await coro
+    else:
+        asyncio.create_task(coro)
 
 
 async def _log_audit(event_type: str, actor_id=None, fleet_id=None, subject_id=None, metadata=None, ip=None):
@@ -199,7 +208,7 @@ async def update_job_status(
     # Audit for terminal states
     if payload.status in ("accepted", "rejected"):
         event = AuditEventType.JOB_ACCEPTED if payload.status == "accepted" else AuditEventType.JOB_REJECTED
-        asyncio.create_task(
+        await _run_audit(
             _log_audit(
                 event,
                 actor_id=current_user.id,
@@ -253,7 +262,7 @@ async def update_job_actual(
     )
 
     # Audit log
-    asyncio.create_task(
+    await _run_audit(
         _log_audit(
             AuditEventType.JOB_ACTUALS_RECORDED,
             actor_id=current_user.id,

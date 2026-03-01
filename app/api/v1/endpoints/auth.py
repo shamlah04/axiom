@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db, AsyncSessionLocal
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.deps import get_current_user
@@ -16,6 +17,14 @@ from app.repositories.audit_repository import AuditRepository
 from app.schemas.schemas import UserRegister, UserOut, Token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+async def _run_audit(coro):
+    """If in test mode, wait for the audit task to finish to avoid race conditions."""
+    if settings.TESTING:
+        await coro
+    else:
+        asyncio.create_task(coro)
 
 
 def _ip(request: Request) -> str | None:
@@ -56,7 +65,7 @@ async def register(
         full_name=payload.full_name,
     )
     
-    asyncio.create_task(
+    await _run_audit(
         _log_audit(
             AuditEventType.USER_REGISTERED,
             actor_id=user.id,
@@ -79,7 +88,7 @@ async def login(
     ip = _ip(request)
     
     if not user or not verify_password(form_data.password, user.hashed_password):
-        asyncio.create_task(
+        await _run_audit(
             _log_audit(
                 AuditEventType.USER_LOGIN_FAILED,
                 actor_id=user.id if user else None,
@@ -95,7 +104,7 @@ async def login(
     
     token = create_access_token(subject=user.id)
     
-    asyncio.create_task(
+    await _run_audit(
         _log_audit(
             AuditEventType.USER_LOGIN,
             actor_id=user.id,

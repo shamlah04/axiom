@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Fleet Cognitive Intelligence Platform"
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
+    TESTING: bool = False
 
     # Database
     DATABASE_URL: str  # e.g. postgresql+asyncpg://user:pass@localhost/db

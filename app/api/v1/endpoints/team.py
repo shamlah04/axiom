@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_fleet_user, get_current_user
 from app.core.roles import require_owner
@@ -43,6 +44,14 @@ from app.services.email_service import EmailService
 
 team_router = APIRouter(prefix="/team", tags=["Team"])
 fleet_router = APIRouter(prefix="/fleets", tags=["Fleets"])
+
+
+async def _run_audit(coro):
+    """If in test mode, wait for the background task to finish to avoid race conditions."""
+    if settings.TESTING:
+        await coro
+    else:
+        asyncio.create_task(coro)
 
 _email = EmailService()
 
@@ -178,8 +187,8 @@ async def create_invite(
         metadata={"role": payload.role.value, "invite_id": str(invite.id)},
     )
 
-    # Send invite email (non-blocking — don't fail the request if email fails)
-    asyncio.create_task(
+    # Send invite email
+    await _run_audit(
         _email.send_team_invite(
             to_email=payload.email,
             fleet_name=fleet.name,
@@ -347,9 +356,9 @@ async def upgrade_subscription(
         metadata={"from": old_tier, "to": payload.new_tier, "via": "direct"},
     )
 
-    # Confirmation email (non-blocking)
+    # Confirmation email
     tier_label = get_limits(new_tier)["label"]
-    asyncio.create_task(
+    await _run_audit(
         _email.send_tier_upgrade_confirmation(
             to_email=current_user.email,
             fleet_name=fleet.name,

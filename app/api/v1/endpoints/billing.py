@@ -47,6 +47,14 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=["Billing"])
 webhook_router = APIRouter(tags=["Webhooks"])
 
+
+async def _run_audit(coro):
+    """If in test mode, wait for the background task to finish to avoid race conditions."""
+    if settings.TESTING:
+        await coro
+    else:
+        asyncio.create_task(coro)
+
 _stripe = StripeService()
 _email = EmailService()
 
@@ -292,10 +300,10 @@ async def _handle_checkout_success(session: dict, db: AsyncSession) -> None:
         metadata={"from": old_tier, "to": new_tier_str, "via": "stripe"},
     )
 
-    # Send confirmation email (non-blocking)
+    # Send confirmation email
     if customer_email:
         tier_label = get_limits(new_tier)["label"]
-        asyncio.create_task(
+        await _run_audit(
             _email.send_tier_upgrade_confirmation(
                 to_email=customer_email,
                 fleet_name=fleet_name,
@@ -340,7 +348,7 @@ async def _handle_payment_failed(invoice: dict, db: AsyncSession) -> None:
     )
 
     if customer_email:
-        asyncio.create_task(
+        await _run_audit(
             _email.send_stripe_payment_failed(
                 to_email=customer_email,
                 fleet_name=fleet_name,
