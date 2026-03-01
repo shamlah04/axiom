@@ -33,3 +33,7 @@ web/build/
 web/next-env.d.ts
 web/package-lock.json
 web/.env*.local
+
+# Tools
+stripe
+*.tar.gz

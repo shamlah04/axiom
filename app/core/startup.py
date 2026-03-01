@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.core.config import settings
 from app.ml.model_registry import registry
 
 log = logging.getLogger(__name__)
