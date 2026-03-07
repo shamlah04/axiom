@@ -138,6 +138,8 @@ export interface DashboardSummary {
   total_jobs: number
   accepted_jobs: number
   rejected_jobs: number
+  completed_jobs: number
+  pending_jobs: number
   total_revenue: number
   total_cost: number
   total_profit: number

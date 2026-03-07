@@ -1,0 +1,11 @@
+# fastlane/Appfile
+# Shared app identifiers used by Fastlane lanes
+
+# ── iOS ───────────────────────────────────────────────────────────────────
+app_identifier("com.axiom.fleet")
+apple_id("your@email.com")             # Your Apple ID email
+itc_team_id("YOUR_ITC_TEAM_ID")        # App Store Connect Team ID
+team_id("YOUR_TEAM_ID")                # Apple Developer Team ID
+
+# ── Android ───────────────────────────────────────────────────────────────
+# package_name("com.axiom.fleet")      # Uncomment if using Android Fastfile

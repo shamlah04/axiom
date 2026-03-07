@@ -1,0 +1,164 @@
+# fastlane/Fastfile
+# Run from project root:
+#   fastlane ios beta          → build + upload to TestFlight
+#   fastlane ios release       → build + submit to App Store
+#   fastlane android beta      → build + upload to Play Store internal
+#   fastlane android release   → build + promote to Play Store production
+
+default_platform(:ios)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared: read version from package.json
+# ─────────────────────────────────────────────────────────────────────────────
+def bump_version(type: "patch")
+  package = load_json(json_path: "web/package.json")
+  version = package["version"]
+  UI.message("Current version: #{version}")
+  version
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# iOS
+# ─────────────────────────────────────────────────────────────────────────────
+platform :ios do
+
+  before_all do
+    # Build Next.js static export + Capacitor sync before any lane
+    sh("cd web && NEXT_EXPORT=true npm run build:mobile && npx cap sync ios")
+    sh("cd web/ios/App && pod install")
+  end
+
+  desc "Build and upload to TestFlight (internal testers)"
+  lane :beta do
+    # Automatically manage code signing
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: "com.axiom.fleet",
+      readonly: is_ci,
+    )
+
+    # Increment build number (keeps version, bumps build)
+    increment_build_number(
+      xcodeproj: "web/ios/App/App.xcodeproj"
+    )
+
+    # Build the IPA
+    build_app(
+      workspace: "web/ios/App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.axiom.fleet" => "Axiom Distribution"
+        }
+      },
+      output_directory: "./build",
+      output_name: "Axiom.ipa",
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      ipa: "./build/Axiom.ipa",
+      skip_waiting_for_build_processing: true,
+      changelog: File.read("fastlane/metadata/ios/en-US/release_notes.txt") rescue "Bug fixes and improvements",
+    )
+
+    UI.success("✅ Uploaded to TestFlight!")
+  end
+
+  desc "Submit to App Store for review"
+  lane :release do
+    # Build the app (same as beta lane)
+    beta
+
+    # Deliver to App Store with metadata
+    deliver(
+      app_identifier: "com.axiom.fleet",
+      ipa: "./build/Axiom.ipa",
+      metadata_path: "fastlane/metadata/ios",
+      screenshots_path: "fastlane/screenshots/ios",
+      submit_for_review: true,
+      automatic_release: false,       # Manual release after approval
+      force: true,                    # Skip HTML preview
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        content_rights_has_rights: true,
+        content_rights_contains_third_party_content: false,
+        add_id_info_uses_idfa: false,
+      }
+    )
+
+    UI.success("✅ Submitted to App Store for review!")
+  end
+end
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Android
+# ─────────────────────────────────────────────────────────────────────────────
+platform :android do
+
+  before_all do
+    sh("cd web && NEXT_EXPORT=true npm run build:mobile && npx cap sync android")
+  end
+
+  desc "Build APK for direct distribution"
+  lane :apk do
+    gradle(
+      project_dir: "web/android",
+      task: "assemble",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file"     => ENV["KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias"      => ENV["KEY_ALIAS"],
+        "android.injected.signing.key.password"   => ENV["KEY_PASSWORD"],
+      }
+    )
+    UI.success("✅ APK built: #{lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]}")
+  end
+
+  desc "Build and upload to Play Store internal track"
+  lane :beta do
+    gradle(
+      project_dir: "web/android",
+      task: "bundle",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file"     => ENV["KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias"      => ENV["KEY_ALIAS"],
+        "android.injected.signing.key.password"   => ENV["KEY_PASSWORD"],
+      }
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
+      package_name: "com.axiom.fleet",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_apk: true,
+      skip_upload_metadata: false,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+
+    UI.success("✅ Uploaded to Play Store internal track!")
+  end
+
+  desc "Promote internal build to production on Play Store"
+  lane :release do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      package_name: "com.axiom.fleet",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"],
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+    )
+
+    UI.success("✅ Promoted to Play Store production!")
+  end
+end

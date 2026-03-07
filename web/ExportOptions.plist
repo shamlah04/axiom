@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  web/ExportOptions.plist
+  Controls how Xcode exports the IPA after archiving.
+  Used by the GitHub Actions CI build.
+  ⚠️  Replace YOUR_TEAM_ID with your actual Apple Developer Team ID.
+-->
+<plist version="1.0">
+<dict>
+  <!-- Distribution method: app-store, ad-hoc, enterprise, development -->
+  <key>method</key>
+  <string>app-store</string>
+
+  <!-- Your Apple Team ID — find at developer.apple.com/account -->
+  <key>teamID</key>
+  <string>YOUR_TEAM_ID</string>
+
+  <!-- Must match your provisioning profile name exactly -->
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>com.axiom.fleet</key>
+    <string>Axiom Distribution</string>
+  </dict>
+
+  <key>signingStyle</key>
+  <string>manual</string>
+
+  <key>signingCertificate</key>
+  <string>Apple Distribution</string>
+
+  <key>stripSwiftSymbols</key>
+  <true/>
+
+  <key>uploadBitcode</key>
+  <false/>
+
+  <key>uploadSymbols</key>
+  <true/>
+
+  <key>compileBitcode</key>
+  <false/>
+</dict>
+</plist>

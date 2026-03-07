@@ -1,0 +1,8 @@
+Initial release of Axiom Fleet Intelligence.
+
+• AI-powered profit prediction for every job
+• Full fleet dashboard with revenue and margin tracking
+• Analytics: trends, top routes, fuel volatility
+• What-if scenario modelling
+• Team management with role-based access
+• Offline support
