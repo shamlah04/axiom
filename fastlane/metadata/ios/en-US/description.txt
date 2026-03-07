@@ -1,0 +1,22 @@
+Axiom Fleet Intelligence — AI-powered profit prediction and fleet management for freight operators.
+
+Make smarter job decisions in seconds. Before accepting any load, Axiom predicts your exact profit margin factoring in fuel, driver costs, tolls, maintenance, and more — powered by machine learning trained on your own fleet's history.
+
+KEY FEATURES
+
+• Instant Profit Prediction — Submit a job and get a full cost breakdown with net profit, margin %, and risk level before you commit.
+
+• Smart Accept / Reject — AI recommendation tells you whether to take the job based on your historical margins and current costs.
+
+• Fleet Dashboard — Live overview of revenue, profit, accept rate, and margin trends across your entire operation.
+
+• Analytics Deep-Dive — Monthly profit trends, top-performing routes, and fuel volatility impact charts.
+
+• What-If Scenarios — Model the financial impact of fuel price changes, rate shifts, or adding trucks before making decisions.
+
+• Team Management — Invite dispatchers and viewers with role-based access control.
+
+• Works Offline — Core app functions are available even without an internet connection.
+
+DESIGNED FOR
+Independent owner-operators, small fleet managers, and dispatchers who want data-driven confidence on every job decision.
