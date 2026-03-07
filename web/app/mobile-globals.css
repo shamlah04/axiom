@@ -1,0 +1,46 @@
+/* app/mobile-globals.css — Mobile/PWA CSS additions */
+
+/* ── PWA / Mobile viewport ───────────────────────────────────────────────── */
+
+/* Use dvh so 100% height works correctly on mobile browsers with address bar */
+:root {
+  --vh: 1dvh;
+}
+
+html, body {
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior: none;
+}
+
+/* Smooth scrolling on iOS */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area insets for iPhone notch / Dynamic Island */
+.safe-top    { padding-top:    env(safe-area-inset-top) }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom) }
+.safe-left   { padding-left:   env(safe-area-inset-left) }
+.safe-right  { padding-right:  env(safe-area-inset-right) }
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Better touch target minimum size (WCAG 2.5.5) */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Inputs: prevent zoom on focus in iOS (requires font-size >= 16px) */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
