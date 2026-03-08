@@ -9,9 +9,8 @@ if [[ "$DATABASE_URL" == *"@db:"* ]] || [[ "$WAIT_FOR_DB" == "true" ]]; then
   done
   echo "PostgreSQL started"
 fi
-# Run migrations
-echo "Running alembic migrations..."
-alembic upgrade head
+# Skip migrations for now
+# alembic upgrade head
 
 # Execute the CMD
 exec "$@"
