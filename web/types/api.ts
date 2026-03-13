@@ -201,3 +201,41 @@ export interface ScenarioResult {
   breakeven_jobs_needed: number
   notes: string[]
 }
+
+// ── Phase 4 Billing / Teams ──────────────────────────────
+export interface PlanSummary {
+  subscription_tier: SubscriptionTier
+  plan_label: string
+  trial_active: boolean
+  trial_expired: boolean
+  trial_days_remaining: number | null
+  trial_ends_at: string | null
+  limits: {
+    max_trucks: number
+    max_drivers: number
+    max_team_members: number
+  }
+  usage: {
+    trucks: number
+    drivers: number
+  }
+  features: {
+    intelligence_dashboard: boolean
+    team_invites: boolean
+    ml_predictions: boolean
+    scenario_simulator: boolean
+    anomaly_detection: boolean
+    trend_analysis: boolean
+    cross_fleet_benchmark: boolean
+  }
+}
+
+export interface CheckoutResponse {
+  checkout_url: string
+  session_id: string
+}
+
+export interface PortalResponse {
+  portal_url: string
+}
+

@@ -6,13 +6,22 @@ import type {
   JobCreate, JobOut, JobPredictionResult,
   DashboardSummary,
   MonthlyTrend, TopRoute, FuelVolatilityMonth,
-  ScenarioInput, ScenarioResult
+  ScenarioInput, ScenarioResult,
+  PlanSummary, CheckoutResponse, PortalResponse
 } from '@/types/api'
 
 // lib/api/fleets.ts
 export const fleetsApi = {
   create: (data: FleetCreate) => api.post<FleetOut>('/api/v1/fleets', data),
   me: () => api.get<FleetOut>('/api/v1/fleets/me'),
+  plan: () => api.get<PlanSummary>('/api/v1/fleets/me/plan'),
+}
+
+export const billingApi = {
+  checkout: (new_tier: string) =>
+    api.post<CheckoutResponse>('/api/v1/billing/checkout', { new_tier }),
+  portal: () =>
+    api.get<PortalResponse>('/api/v1/billing/portal'),
 }
 
 // lib/api/trucks.ts
@@ -63,4 +72,9 @@ export const analyticsApi = {
 export const scenariosApi = {
   simulate: (data: ScenarioInput) =>
     api.post<ScenarioResult>('/api/v1/scenarios/simulate', data),
+}
+
+export const teamApi = {
+  acceptInvite: (token: string) =>
+    api.post<{ role: string }>('/api/v1/team/invites/accept', { token }),
 }

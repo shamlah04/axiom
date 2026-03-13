@@ -25,6 +25,33 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,   // Set true only for dev builds
+    backgroundColor: '#0f172a',
+  },
+
+  plugins: {
+    // Status bar: match app dark theme
+    StatusBar: {
+      style: 'dark',
+      backgroundColor: '#0f172a',
+      overlaysWebView: false,
+    },
+    // Keyboard: prevent viewport resize when keyboard opens
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true,
+    },
+    // Splash screen
+    SplashScreen: {
+      launchShowDuration: 1500,
+      launchAutoHide: true,
+      backgroundColor: '#0f172a',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      iosSpinnerStyle: 'small',
+      spinnerColor: '#06b6d4',
+    },
   },
 };
 

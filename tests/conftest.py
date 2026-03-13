@@ -65,6 +65,8 @@ def override_database_internals(monkeypatch, engine, TestingSessionLocal):
     import app.core.database
     import app.api.v1.endpoints.auth
     import app.api.v1.endpoints.jobs
+    import app.api.v1.endpoints.drivers
+    import app.api.v1.endpoints.trucks
     import app.services.scheduler
 
     # Override the engine and the session factory globally
@@ -75,6 +77,8 @@ def override_database_internals(monkeypatch, engine, TestingSessionLocal):
     # These assignments ensure existing references now point to our test factory
     monkeypatch.setattr("app.api.v1.endpoints.auth.AsyncSessionLocal", TestingSessionLocal)
     monkeypatch.setattr("app.api.v1.endpoints.jobs.AsyncSessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.api.v1.endpoints.drivers.AsyncSessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.api.v1.endpoints.trucks.AsyncSessionLocal", TestingSessionLocal)
     monkeypatch.setattr("app.services.scheduler.AsyncSessionLocal", TestingSessionLocal)
 
 @pytest.fixture(autouse=True)

@@ -107,7 +107,7 @@ async def create_checkout(
     )
 
     if not result["ok"]:
-        raise HTTPException(status_code=502, detail=f"Stripe error: {result.get('error')}")
+        raise HTTPException(status_code=503, detail=f"Stripe error: {result.get('error')}")
 
     # Audit log
     audit = AuditRepository(db)

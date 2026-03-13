@@ -44,9 +44,22 @@ class AuditEventType(str, enum.Enum):
     USER_LOGIN_FAILED             = "auth.login_failed"
 
     # Jobs
+    JOB_CREATED                   = "job.created"
     JOB_ACCEPTED                  = "job.accepted"
     JOB_REJECTED                  = "job.rejected"
     JOB_ACTUALS_RECORDED          = "job.actuals_recorded"
+
+    # Fleet assets — trucks
+    TRUCK_ADDED                   = "fleet.truck_added"
+    TRUCK_UPDATED                 = "fleet.truck_updated"
+    TRUCK_REMOVED                 = "fleet.truck_removed"
+
+    # Fleet assets — drivers
+    DRIVER_ADDED                  = "fleet.driver_added"
+    DRIVER_REMOVED                = "fleet.driver_removed"
+
+    # Fleet lifecycle
+    FLEET_CREATED                 = "fleet.created"
 
     # Email
     EMAIL_SENT                    = "email.sent"

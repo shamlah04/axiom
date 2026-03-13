@@ -15,13 +15,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ── CORS ───────────────────────────────────────────────────────────────────
+if settings.DEBUG or settings.TESTING:
+    # Allow all local origins in dev for mobile/PWA testing on local WiFi
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # Wildcard (*) cannot be used with credentials: True
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Production: restrict to your actual frontend domain
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.APP_BASE_URL],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
+# ────────────────────────────────────────────────────────────────────────────
 
 # API v1 Hub (prefixed)
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
