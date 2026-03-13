@@ -28,8 +28,10 @@ def upgrade() -> None:
             op.execute("ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'expired'")
 
         # 2. Alter the column to use the enum type
-        # We assume it was String(30) before as per 0001_init.py
+        # Drop the default first because Postgres can't cast the default value automatically
+        op.execute("ALTER TABLE jobs ALTER COLUMN status DROP DEFAULT")
         op.execute("ALTER TABLE jobs ALTER COLUMN status TYPE jobstatus USING status::jobstatus")
+        op.execute("ALTER TABLE jobs ALTER COLUMN status SET DEFAULT 'pending'::jobstatus")
     
     # 3. Create index for stale job cleanup
     op.create_index(
