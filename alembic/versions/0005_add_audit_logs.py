@@ -24,18 +24,18 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "audit_logs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column("event_type", sa.String(80), nullable=False),
         # No FK on these — rows must survive user/fleet deletion
-        sa.Column("actor_user_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("fleet_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("actor_user_id", sa.UUID(as_uuid=True), nullable=True),
+        sa.Column("fleet_id", sa.UUID(as_uuid=True), nullable=True),
         sa.Column("subject_id", sa.String(255), nullable=True),
-        sa.Column("metadata", postgresql.JSONB, nullable=True),
+        sa.Column("metadata", sa.JSON, nullable=True),
         sa.Column("ip_address", sa.String(45), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
     )

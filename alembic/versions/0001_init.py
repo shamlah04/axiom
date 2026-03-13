@@ -28,7 +28,7 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "fleets",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("country", sa.String(10), server_default="DK"),
         sa.Column(
@@ -41,7 +41,7 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
     )
@@ -51,20 +51,20 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "users",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(255), nullable=False, unique=True),
         sa.Column("hashed_password", sa.String(255), nullable=False),
         sa.Column("full_name", sa.String(255), nullable=False),
-        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default='1', nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
         sa.Column(
             "fleet_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("fleets.id"),
             nullable=True,
         ),
@@ -76,10 +76,10 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "trucks",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "fleet_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("fleets.id"),
             nullable=False,
         ),
@@ -95,11 +95,11 @@ def upgrade() -> None:
         sa.Column("maintenance_cost_per_km", sa.Float(), nullable=False),
         sa.Column("insurance_monthly", sa.Float(), nullable=False),
         sa.Column("leasing_monthly", sa.Float(), nullable=True),
-        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default='1', nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
     )
@@ -110,21 +110,21 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "drivers",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "fleet_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("fleets.id"),
             nullable=False,
         ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("hourly_rate", sa.Float(), nullable=False),
         sa.Column("monthly_fixed_cost", sa.Float(), server_default="0", nullable=False),
-        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default='1', nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
     )
@@ -135,22 +135,22 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "jobs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "fleet_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("fleets.id"),
             nullable=False,
         ),
         sa.Column(
             "truck_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("trucks.id"),
             nullable=False,
         ),
         sa.Column(
             "driver_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("drivers.id"),
             nullable=False,
         ),
@@ -188,7 +188,7 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
             nullable=False,
         ),
     )
