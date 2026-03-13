@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // scripts/generate-icons.mjs
-// Generates all required PWA icon sizes from a base SVG
+// Generates all required PWA icon sizes from a base SVG or PNG
 // Run: node scripts/generate-icons.mjs
 // Requires: npm install sharp --save-dev
 
 import sharp from 'sharp'
-import { mkdirSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -38,11 +38,11 @@ async function generateIcons() {
     console.log(`  ✓ icon-${size}x${size}.png`)
   }
 
-  // Also generate favicon size
+  // Also generate favicon sizes
   await sharp(buffer).resize(32, 32).png().toFile(join(OUT_DIR, 'icon-32x32.png'))
   console.log('  ✓ icon-32x32.png')
 
-  // Generate iPhone 14 Pro Max splash screen
+  // Generate a simple splash screen (white on dark)
   const splashSVG = `
   <svg width="1290" height="2796" xmlns="http://www.w3.org/2000/svg">
     <rect width="1290" height="2796" fill="#0f172a"/>
@@ -58,6 +58,7 @@ async function generateIcons() {
   console.log('  ✓ splash-1290x2796.png (iPhone 14 Pro Max)')
 
   console.log('\n✅ All icons generated in public/icons/')
+  console.log('   Add "sharp" to devDependencies: npm install sharp --save-dev')
 }
 
 generateIcons().catch(console.error)

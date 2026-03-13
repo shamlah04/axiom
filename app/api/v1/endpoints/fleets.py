@@ -9,8 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.models import User, SubscriptionTier
+import asyncio
 from app.repositories.repositories import FleetRepository, UserRepository
+from app.repositories.audit_repository import AuditRepository
+from app.models.audit import AuditEventType
+from app.services.email_service import EmailService
 from app.schemas.schemas import FleetCreate, FleetOut
+
+_email = EmailService()
 
 router = APIRouter(prefix="/fleets", tags=["Fleets"])
 
@@ -40,6 +46,43 @@ async def create_fleet(
 
     user_repo = UserRepository(db)
     await user_repo.set_fleet(current_user, fleet.id, role="owner")
+
+    # Audit
+    audit = AuditRepository(db)
+    # Log fleet creation
+    await audit.log(
+        AuditEventType.FLEET_CREATED,
+        actor_user_id=current_user.id,
+        fleet_id=fleet.id,
+        metadata={
+            "fleet_name": fleet.name,
+            "country": fleet.country,
+            "tier": fleet.subscription_tier.value,
+        },
+    )
+
+    # Log trial start
+    if fleet.trial_ends_at:
+        await audit.log(
+            AuditEventType.TRIAL_STARTED,
+            actor_user_id=current_user.id,
+            fleet_id=fleet.id,
+            metadata={
+                "fleet_name": fleet.name,
+                "tier": fleet.subscription_tier.value,
+                "trial_ends_at": fleet.trial_ends_at.isoformat(),
+            },
+        )
+
+    # Send fleet-created confirmation (fire-and-forget)
+    asyncio.create_task(
+        _email.send_fleet_created(
+            to_email=current_user.email,
+            full_name=current_user.full_name or current_user.email,
+            fleet_name=fleet.name,
+            trial_days=14,
+        )
+    )
 
     return fleet
 

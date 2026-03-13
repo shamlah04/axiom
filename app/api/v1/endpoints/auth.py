@@ -14,7 +14,10 @@ from app.models.models import User
 from app.models.audit import AuditEventType
 from app.repositories.repositories import UserRepository
 from app.repositories.audit_repository import AuditRepository
+from app.services.email_service import EmailService
 from app.schemas.schemas import UserRegister, UserOut, Token
+
+_email = EmailService()
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -73,6 +76,15 @@ async def register(
             ip=_ip(request)
         )
     )
+
+    # Send welcome email (fire-and-forget)
+    asyncio.create_task(
+        _email.send_welcome(
+            to_email=user.email,
+            full_name=user.full_name or user.email,
+        )
+    )
+
     return user
 
 

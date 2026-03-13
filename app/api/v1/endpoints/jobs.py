@@ -143,6 +143,26 @@ async def create_job(
 
     await db.commit()
 
+    # Log job creation (prediction requested)
+    await _run_audit(
+        _log_audit(
+            AuditEventType.JOB_CREATED,
+            actor_id=current_user.id,
+            fleet_id=current_user.fleet_id,
+            subject_id=str(job.id),
+            metadata={
+                "origin": payload.origin,
+                "destination": payload.destination,
+                "distance_km": payload.distance_km,
+                "offered_rate": payload.offered_rate,
+                "net_profit": prediction.predicted_net_profit,
+                "margin_pct": prediction.margin_pct,
+                "recommendation": prediction.recommendation.value,
+                "risk_level": prediction.risk_level.value,
+            },
+        )
+    )
+
     return JobPredictionResult(
         job_id=job.id,
         total_cost=prediction.predicted_total_cost,
