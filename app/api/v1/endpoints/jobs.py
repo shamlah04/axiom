@@ -5,7 +5,7 @@ Phase 1: ML-backed prediction and audit logging.
 import uuid
 
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -24,6 +24,7 @@ from app.repositories.audit_repository import AuditRepository
 from app.schemas.schemas import (
     JobCreate, JobOut, JobPredictionResult, JobStatusUpdate, JobActualUpdate
 )
+from app.main import limiter
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -56,7 +57,9 @@ async def _log_audit(event_type: str, actor_id=None, fleet_id=None, subject_id=N
     status_code=201,
     dependencies=[Depends(require_dispatcher_or_above)],
 )
+@limiter.limit("30/minute")
 async def create_job(
+    request: Request,
     payload: JobCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_fleet_user),

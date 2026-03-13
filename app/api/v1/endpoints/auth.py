@@ -15,6 +15,7 @@ from app.models.audit import AuditEventType
 from app.repositories.repositories import UserRepository
 from app.repositories.audit_repository import AuditRepository
 from app.services.email_service import EmailService
+from app.main import limiter
 from app.schemas.schemas import UserRegister, UserOut, Token
 
 _email = EmailService()
@@ -52,6 +53,7 @@ async def _log_audit(event_type: str, actor_id=None, fleet_id=None, subject_id=N
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
+@limiter.limit("5/minute")
 async def register(
     payload: UserRegister,
     request: Request,
@@ -89,6 +91,7 @@ async def register(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("10/minute")
 async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),

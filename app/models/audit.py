@@ -65,6 +65,10 @@ class AuditEventType(str, enum.Enum):
     EMAIL_SENT                    = "email.sent"
     EMAIL_FAILED                  = "email.failed"
 
+    # Phase 5 — Scheduler
+    STALE_JOBS_EXPIRED            = "scheduler.stale_jobs_expired"
+    MODEL_RETRAINED               = "scheduler.model_retrained"
+
 
 class AuditLog(Base):
     """
