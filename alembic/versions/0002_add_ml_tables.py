@@ -21,7 +21,7 @@ def upgrade() -> None:
     # ── ml_model_versions ────────────────────────────────────────────────
     op.create_table(
         "ml_model_versions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column("version", sa.String(20), unique=True, nullable=False),
         sa.Column("description", sa.String(255), nullable=True),
         sa.Column("training_samples", sa.Integer, nullable=False),
@@ -29,7 +29,7 @@ def upgrade() -> None:
         sa.Column("train_r2", sa.Float, nullable=False),
         sa.Column("test_rmse", sa.Float, nullable=True),
         sa.Column("test_r2", sa.Float, nullable=True),
-        sa.Column("feature_names", postgresql.JSONB, nullable=False),
+        sa.Column("feature_names", sa.JSON, nullable=False),
         sa.Column("model_path", sa.String(512), nullable=False),
         sa.Column("is_active", sa.Boolean, default=False, nullable=False),
         sa.Column(
@@ -44,18 +44,18 @@ def upgrade() -> None:
     # ── prediction_logs ──────────────────────────────────────────────────
     op.create_table(
         "prediction_logs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "job_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("jobs.id", ondelete="CASCADE"),
             nullable=False,
             unique=True,
         ),
-        sa.Column("fleet_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("fleet_id", sa.UUID(as_uuid=True), nullable=False),
         sa.Column(
             "model_version_id",
-            postgresql.UUID(as_uuid=True),
+            sa.UUID(as_uuid=True),
             sa.ForeignKey("ml_model_versions.id"),
             nullable=True,
         ),
@@ -64,8 +64,8 @@ def upgrade() -> None:
         sa.Column("predicted_net_profit", sa.Float, nullable=False),
         sa.Column("predicted_total_cost", sa.Float, nullable=False),
         sa.Column("predicted_margin_pct", sa.Float, nullable=False),
-        sa.Column("features_snapshot", postgresql.JSONB, nullable=True),
-        sa.Column("feature_importances", postgresql.JSONB, nullable=True),
+        sa.Column("features_snapshot", sa.JSON, nullable=True),
+        sa.Column("feature_importances", sa.JSON, nullable=True),
         # Actuals (filled later)
         sa.Column("actual_net_profit", sa.Float, nullable=True),
         sa.Column("actual_total_cost", sa.Float, nullable=True),
