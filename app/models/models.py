@@ -41,6 +41,14 @@ class JobRecommendation(str, enum.Enum):
     reject = "reject"
 
 
+class JobStatus(str, enum.Enum):
+    pending   = "pending"
+    accepted  = "accepted"
+    rejected  = "rejected"
+    completed = "completed"
+    expired   = "expired"
+
+
 class SubscriptionTier(str, enum.Enum):
     tier1 = "tier1"   # 1-2 trucks
     tier2 = "tier2"   # 3-10 trucks
@@ -174,7 +182,7 @@ class Job(Base):
     actual_revenue: Mapped[float] = mapped_column(Float, nullable=True)
     actual_cost: Mapped[float] = mapped_column(Float, nullable=True)
 
-    status: Mapped[str] = mapped_column(String(30), default="pending")  # pending/accepted/rejected/completed
+    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus), default=JobStatus.pending)
     job_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
