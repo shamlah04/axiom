@@ -4,11 +4,23 @@
 // Simulates the Stripe checkout UI so the frontend flow can be tested end-to-end.
 // URL: /billing/mock-checkout?fleet_id=...&tier=tier2
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api/client'
 
 export default function MockCheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <MockCheckoutContent />
+    </Suspense>
+  )
+}
+
+function MockCheckoutContent() {
   const params = useSearchParams()
   const router = useRouter()
   const tier = params.get('tier') ?? 'tier2'
@@ -16,7 +28,7 @@ export default function MockCheckoutPage() {
   const [error, setError] = useState('')
 
   const tierLabels: Record<string, { label: string; price: string }> = {
-    tier2: { label: 'Growth',     price: '€49 / month' },
+    tier2: { label: 'Growth', price: '€49 / month' },
     tier3: { label: 'Enterprise', price: '€149 / month' },
   }
   const { label, price } = tierLabels[tier] ?? tierLabels.tier2

@@ -3,13 +3,25 @@
 // Stripe redirects here after a successful checkout session.
 // URL: /billing/success?session_id=cs_...
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { fleetsApi } from '@/lib/api/modules'
 import type { PlanSummary } from '@/types/api'
 
 export default function BillingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <BillingSuccessContent />
+    </Suspense>
+  )
+}
+
+function BillingSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const sessionId = searchParams.get('session_id')

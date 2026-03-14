@@ -6,7 +6,7 @@
 // - Manage subscription → GET /billing/portal → redirect to Stripe portal
 // - Handles ?cancelled=1 query param from Stripe cancel redirect
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { fleetsApi, billingApi } from '@/lib/api/modules'
 import { Card, CardHeader, CardContent, Button, Badge } from '@/components/ui'
@@ -40,18 +40,32 @@ const TIER_CONFIG = {
 type Tier = keyof typeof TIER_CONFIG
 
 const FEATURE_ROWS: { label: string; tier1: boolean; tier2: boolean; tier3: boolean }[] = [
-  { label: 'Profit prediction engine',    tier1: true,  tier2: true,  tier3: true  },
-  { label: 'Scenario simulator',          tier1: true,  tier2: true,  tier3: true  },
-  { label: 'Fleet dashboard & analytics', tier1: true,  tier2: true,  tier3: true  },
-  { label: 'Intelligence dashboard',      tier1: false, tier2: true,  tier3: true  },
-  { label: 'Trend & anomaly detection',   tier1: false, tier2: true,  tier3: true  },
-  { label: 'Cross-fleet benchmarking',    tier1: false, tier2: true,  tier3: true  },
-  { label: 'Team invites',                tier1: false, tier2: true,  tier3: true  },
-  { label: 'Unlimited team members',      tier1: false, tier2: false, tier3: true  },
-  { label: 'Priority support',            tier1: false, tier2: false, tier3: true  },
+  { label: 'Profit prediction engine', tier1: true, tier2: true, tier3: true },
+  { label: 'Scenario simulator', tier1: true, tier2: true, tier3: true },
+  { label: 'Fleet dashboard & analytics', tier1: true, tier2: true, tier3: true },
+  { label: 'Intelligence dashboard', tier1: false, tier2: true, tier3: true },
+  { label: 'Trend & anomaly detection', tier1: false, tier2: true, tier3: true },
+  { label: 'Cross-fleet benchmarking', tier1: false, tier2: true, tier3: true },
+  { label: 'Team invites', tier1: false, tier2: true, tier3: true },
+  { label: 'Unlimited team members', tier1: false, tier2: false, tier3: true },
+  { label: 'Priority support', tier1: false, tier2: false, tier3: true },
 ]
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6 animate-pulse">
+        <div className="h-7 w-40 bg-slate-800 rounded" />
+        <div className="h-32 bg-slate-800 rounded-xl" />
+        <div className="h-64 bg-slate-800 rounded-xl" />
+      </div>
+    }>
+      <BillingPageContent />
+    </Suspense>
+  )
+}
+
+function BillingPageContent() {
   const searchParams = useSearchParams()
   const cancelled = searchParams.get('cancelled') === '1'
 
@@ -183,15 +197,14 @@ export default function BillingPage() {
                   </div>
                   <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        item.max === 9999
+                      className={`h-full rounded-full transition-all ${item.max === 9999
                           ? 'bg-cyan-500'
                           : item.used / item.max > 0.8
-                          ? 'bg-red-500'
-                          : item.used / item.max > 0.6
-                          ? 'bg-amber-500'
-                          : 'bg-cyan-500'
-                      }`}
+                            ? 'bg-red-500'
+                            : item.used / item.max > 0.6
+                              ? 'bg-amber-500'
+                              : 'bg-cyan-500'
+                        }`}
                       style={{ width: `${Math.min(100, (item.used / Math.min(item.max, 9999)) * 100)}%` }}
                     />
                   </div>

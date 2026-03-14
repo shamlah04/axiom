@@ -7,7 +7,7 @@
 //   A) User already logged in → immediately POST /team/invites/accept
 //   B) User not logged in → show register/login form, then accept on success
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { teamApi } from '@/lib/api/modules'
@@ -17,6 +17,18 @@ import { Button, Input } from '@/components/ui'
 type Step = 'loading' | 'login' | 'accepting' | 'done' | 'error'
 
 export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <AcceptInviteContent />
+    </Suspense>
+  )
+}
+
+function AcceptInviteContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token') ?? ''
@@ -154,11 +166,10 @@ export default function AcceptInvitePage() {
               <button
                 key={String(opt.value)}
                 onClick={() => setIsNewUser(opt.value)}
-                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  isNewUser === opt.value
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNewUser === opt.value
                     ? 'bg-slate-700 text-slate-100'
                     : 'text-slate-500 hover:text-slate-400'
-                }`}
+                  }`}
               >
                 {opt.label}
               </button>
