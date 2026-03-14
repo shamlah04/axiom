@@ -1,47 +1,55 @@
 """
-alembic/versions/0007_phase5_setup.py
-──────────────────────────────────────
-Phase 5: Adds 'expired' to job status and indexes for cleanup.
+alembic/versions/0007_add_job_status_expired.py
+────────────────────────────────────────────────
+Phase 5: Adds 'expired' to job status + index for stale job cleanup.
 
-Revision: 0007
-Down: 0006
+NOTE: This is revision 0007, not 0006, because 0006 already exists
+(it adds stripe_customer_id to fleets). Check your chain with:
+  alembic history
+
+If your chain ends at 0006, set down_revision = "0006" below and use 0007.
+If it ends at 0005, set down_revision = "0005" and rename to 0006.
+
+Dialect-aware: PostgreSQL ALTER TYPE + SQLite no-op (SQLite stores status
+as VARCHAR and already accepts any value).
 """
+
 from __future__ import annotations
-from alembic import op
+
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from alembic import op
 
 revision = "0007"
-down_revision = "0006"
+down_revision = "0006"   # adjust if your chain differs
 branch_labels = None
 depends_on = None
 
-def upgrade() -> None:
-    # 1. Create the enum type if on Postgres
-    connection = op.get_bind()
-    if connection.engine.name == "postgresql":
-        # Check if type exists
-        res = connection.execute(sa.text("SELECT 1 FROM pg_type WHERE typname = 'jobstatus'"))
-        if not res.first():
-            op.execute("CREATE TYPE jobstatus AS ENUM ('pending', 'accepted', 'rejected', 'completed', 'expired')")
-        else:
-            op.execute("ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'expired'")
 
-        # 2. Alter the column to use the enum type
-        # Drop the default first because Postgres can't cast the default value automatically
-        op.execute("ALTER TABLE jobs ALTER COLUMN status DROP DEFAULT")
-        op.execute("ALTER TABLE jobs ALTER COLUMN status TYPE jobstatus USING status::jobstatus")
-        op.execute("ALTER TABLE jobs ALTER COLUMN status SET DEFAULT 'pending'::jobstatus")
-    
-    # 3. Create index for stale job cleanup
-    op.create_index(
-        "ix_jobs_pending_created",
-        "jobs",
-        ["status", "created_at"],
-        postgresql_where="status = 'pending'",
-    )
+def _pg() -> bool:
+    return op.get_bind().dialect.name == "postgresql"
+
+
+def upgrade() -> None:
+    if _pg():
+        # PostgreSQL: extend the enum type
+        op.execute("ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'expired'")
+        # Index to speed up the scheduler's stale-job cleanup query
+        op.create_index(
+            "ix_jobs_pending_created",
+            "jobs",
+            ["status", "created_at"],
+            postgresql_where="status = 'pending'",
+        )
+    else:
+        # SQLite: status is already VARCHAR — 'expired' is already a valid value.
+        # Just add the plain index (no partial index support in SQLite).
+        op.create_index(
+            "ix_jobs_pending_created",
+            "jobs",
+            ["status", "created_at"],
+        )
+
 
 def downgrade() -> None:
     op.drop_index("ix_jobs_pending_created", table_name="jobs")
-    # Downgrading enum types and column types is risky and dialect-dependent.
-    # Keeping it as is for safety.
+    # PostgreSQL: cannot remove enum values without recreating type — skip.

@@ -27,10 +27,20 @@ jobs:
           --health-retries 5
 
     env:
+      # ── Always use Postgres in CI — matches production exactly ──────────
+      # Never use SQLite in CI: migrations use Postgres-specific DDL and
+      # aiosqlite does not support CREATE TYPE, JSONB, ALTER COLUMN, etc.
       DATABASE_URL: postgresql+asyncpg://fcip:fcip_pass@localhost:5432/fcip_db
-      SECRET_KEY: ci-secret-key-that-is-long-enough-32chars
+      SECRET_KEY: ci-secret-key-that-is-long-enough-for-32-chars
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      # Disable external services in CI
+      RESEND_API_KEY: disabled
+      STRIPE_SECRET_KEY: disabled
+      SCHEDULER_ENABLED: "false"
+      ML_RETRAIN_ENABLED: "false"
+      APP_BASE_URL: http://localhost:3000
+      TESTING: "true"
 
     steps:
       - name: Checkout
@@ -67,7 +77,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements_ml.txt
 
-      - name: Check syntax (py_compile)
+      - name: Check syntax
         run: |
-          python -m py_compile $(find app -name "*.py")
+          python -m py_compile $(find app alembic -name "*.py")
           echo "All files passed syntax check"
