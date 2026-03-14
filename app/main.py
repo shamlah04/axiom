@@ -22,6 +22,7 @@ from app.api.v1.endpoints.billing import webhook_router
 from app.core.startup import lifespan
 
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,13 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    log.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    log.info(f"Response: {response.status_code}")
+    return response
 
 # ── Security headers middleware ───────────────────────────────────────────────
 @app.middleware("http")
