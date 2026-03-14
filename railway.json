@@ -2,9 +2,5 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile"
-  },
-  "deploy": {
-    "port": 8080,
-    "startCommand": "docker-entrypoint.sh"
   }
 }
