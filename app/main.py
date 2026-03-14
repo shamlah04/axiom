@@ -56,13 +56,6 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    log.info(f"Incoming request: {request.method} {request.url}")
-    response = await call_next(request)
-    log.info(f"Response: {response.status_code}")
-    return response
-
 # ── Security headers middleware ───────────────────────────────────────────────
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next) -> Response:
@@ -109,10 +102,6 @@ async def add_security_headers(request: Request, call_next) -> Response:
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 app.include_router(webhook_router)   # /webhooks/stripe — no prefix
-
-@app.get("/")
-async def root():
-    return {"message": "Axiom API is running"}
 
 # ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health", include_in_schema=False)
