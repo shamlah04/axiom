@@ -103,6 +103,10 @@ async def add_security_headers(request: Request, call_next) -> Response:
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 app.include_router(webhook_router)   # /webhooks/stripe — no prefix
 
+@app.get("/")
+async def root():
+    return {"message": "Axiom API is running"}
+
 # ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health", include_in_schema=False)
 @limiter.exempt
