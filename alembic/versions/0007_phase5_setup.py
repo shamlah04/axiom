@@ -31,8 +31,7 @@ def _pg() -> bool:
 
 def upgrade() -> None:
     if _pg():
-        # PostgreSQL: extend the enum type
-        op.execute("ALTER TYPE jobstatus ADD VALUE IF NOT EXISTS 'expired'")
+        # PostgreSQL: status is VARCHAR(20) in 0001_init.py, so no enum to alter.
         # Index to speed up the scheduler's stale-job cleanup query
         op.create_index(
             "ix_jobs_pending_created",
