@@ -48,10 +48,11 @@ app.add_middleware(SlowAPIMiddleware)
 # In production, restrict to your actual frontend origin.
 # In dev (DEBUG=true or APP_BASE_URL=localhost), allow all.
 _is_local = "localhost" in settings.APP_BASE_URL or "127.0.0.1" in settings.APP_BASE_URL
+_allowed_origins = [o.strip() for o in settings.APP_BASE_URL.split(",")] if settings.APP_BASE_URL else []
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if (_is_local or settings.DEBUG) else [settings.APP_BASE_URL],
+    allow_origins=["*"] if (_is_local or settings.DEBUG) else _allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
