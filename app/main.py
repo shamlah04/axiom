@@ -91,7 +91,7 @@ async def add_security_headers(request: Request, call_next) -> Response:
     # Content-Security-Policy — allow Stripe, Swagger CDNs and self
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://js.stripe.com https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net; "
         "frame-src https://js.stripe.com; "
         "connect-src 'self' https://api.stripe.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
