@@ -18,15 +18,30 @@ if [[ "$DATABASE_URL" =~ @([^/:]+)(:([0-9]+))? ]]; then
 fi
 
 echo "🔄 Running database migrations..."
-if alembic upgrade head; then
-    echo "✅ Migrations complete."
+alembic upgrade head
+echo "✅ Migrations complete."
+
+echo "🚀 Starting Uvicorn in background..."
+uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8080}" --log-level info &
+UVICORN_PID=$!
+
+sleep 5
+
+echo "🔍 Testing internal connectivity..."
+if curl -s http://localhost:"${PORT:-8080}"/health; then
+    echo "✅ Internal health check SUCCEEDED"
 else
-    echo "❌ Migrations failed!"
-    exit 1
+    echo "❌ Internal health check FAILED"
+    # Try 0.0.0.0
+    if curl -s http://0.0.0.0:"${PORT:-8080}"/health; then
+        echo "✅ Internal 0.0.0.0 health check SUCCEEDED"
+    else
+        echo "❌ Internal 0.0.0.0 health check FAILED"
+    fi
 fi
 
-echo "🚀 Starting Uvicorn on port ${PORT:-8000}..."
-echo "Current PATH: $PATH"
-echo "Uvicorn path: $(which uvicorn || echo 'NOT FOUND')"
+echo "📋 Active ports:"
+netstat -tulpn || ss -tulpn || echo "netstat/ss not found"
 
-exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --log-level info --access-log
+# Bring uvicorn to foreground
+wait $UVICORN_PID
