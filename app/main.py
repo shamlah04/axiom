@@ -56,6 +56,13 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    log.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    log.info(f"Response: {response.status_code}")
+    return response
+
 # ── Security headers middleware ───────────────────────────────────────────────
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next) -> Response:
