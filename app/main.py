@@ -88,13 +88,13 @@ async def add_security_headers(request: Request, call_next) -> Response:
             "max-age=31536000; includeSubDomains"
         )
 
-    # Content-Security-Policy — allow Stripe JS and our own origin
+    # Content-Security-Policy — allow Stripe, Swagger CDNs and self
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://js.stripe.com; "
+        "script-src 'self' https://js.stripe.com https://cdn.jsdelivr.net; "
         "frame-src https://js.stripe.com; "
         "connect-src 'self' https://api.stripe.com; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "img-src 'self' data: https:; "
         "font-src 'self' data:;"
     )
